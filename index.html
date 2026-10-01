@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQA GCSE Science: The Kidney & Homeostasis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0fdfa; color: #1e293b; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Interactive selection styles */
+        .selectable.selected { border-color: #3b82f6; background-color: #eff6ff; box-shadow: 0 0 0 2px #3b82f6; }
+        .dropzone { min-height: 50px; transition: all 0.2s; }
+        .dropzone.highlight { background-color: #e0f2fe; border-color: #0ea5e9; }
+        .correct-anim { animation: successPulse 0.5s; background-color: #dcfce7 !important; border-color: #22c55e !important;}
+        .wrong-anim { animation: errorShake 0.5s; background-color: #fee2e2 !important; border-color: #ef4444 !important;}
+        
+        @keyframes successPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes errorShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        svg .organ { transition: fill 0.3s; }
+        svg .organ:hover { fill: #fca5a5; cursor: pointer; }
+        
+        /* Drag and Drop Helpers */
+        .dragging { opacity: 0.5; }
+        .drag-over { border-color: #14b8a6 !important; background-color: #ccfbf1 !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-teal-600 text-white shadow-md z-10 sticky top-0">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-kidneys"></i> AQA GCSE: The Kidney
+            </h1>
+            <span class="text-sm font-medium bg-teal-700 px-3 py-1 rounded-full hidden sm:block">Made by Mr Reeve</span>
+        </div>
+        <nav class="max-w-6xl mx-auto px-2 flex overflow-x-auto no-scrollbar border-t border-teal-500">
+            <button onclick="switchTab('tab-anatomy')" class="tab-btn active px-4 py-3 whitespace-nowrap font-semibold border-b-4 border-white text-white hover:bg-teal-500 transition">1. Anatomy</button>
+            <button onclick="switchTab('tab-functions')" class="tab-btn px-4 py-3 whitespace-nowrap font-semibold border-b-4 border-transparent text-teal-100 hover:text-white hover:bg-teal-500 transition">2. Functions</button>
+            <button onclick="switchTab('tab-quiz')" class="tab-btn px-4 py-3 whitespace-nowrap font-semibold border-b-4 border-transparent text-teal-100 hover:text-white hover:bg-teal-500 transition">3. MCQs</button>
+            <button onclick="switchTab('tab-adh')" class="tab-btn px-4 py-3 whitespace-nowrap font-semibold border-b-4 border-transparent text-teal-100 hover:text-white hover:bg-teal-500 transition">4. ADH Order</button>
+            <button onclick="switchTab('tab-exam')" class="tab-btn px-4 py-3 whitespace-nowrap font-semibold border-b-4 border-transparent text-teal-100 hover:text-white hover:bg-teal-500 transition">5. Exam Qs</button>
+        </nav>
+    </header>
+
+    <main class="flex-grow max-w-6xl mx-auto w-full p-4 md:p-6 pb-20">
+
+        <section id="tab-anatomy" class="tab-content active bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Basic Kidney Anatomy</h2>
+                    <p class="text-slate-600"><i class="fa-solid fa-hand-pointer text-teal-500 mr-1"></i> <strong>Tap or Drag</strong> a label into the correct box.</p>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 px-4 py-2 rounded-lg text-center">
+                    <span class="block text-xs text-teal-600 font-bold uppercase">Section Score</span>
+                    <span id="score-anatomy-txt" class="text-xl font-bold text-teal-800">0 / 6</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col md:flex-row gap-8 items-start mt-6">
+                <div class="w-full md:w-1/3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <h3 class="font-semibold text-slate-700 mb-3">Labels to place:</h3>
+                    <div id="anatomy-labels" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <div class="w-full md:w-2/3 flex justify-center bg-blue-50/50 p-4 rounded-lg border border-slate-200 overflow-hidden">
+                    <!-- Fixed coordinate system container to align SVG lines and HTML dropzones perfectly -->
+                    <div class="relative" style="width: 300px; height: 450px;">
+                        
+                        <svg width="300" height="450" viewBox="0 0 300 450" xmlns="http://www.w3.org/2000/svg" class="absolute inset-0 z-0 pointer-events-none">
+                            <defs>
+                                <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto-start-reverse">
+                                    <polygon points="0 0, 6 3, 0 6" fill="#64748b" />
+                                </marker>
+                            </defs>
+                            
+                            <!-- Pointer Lines -->
+                            <line x1="110" y1="40" x2="135" y2="70" stroke="#64748b" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)" /> <!-- Vein -->
+                            <line x1="190" y1="40" x2="165" y2="70" stroke="#64748b" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)" /> <!-- Artery -->
+                            <line x1="100" y1="130" x2="80" y2="130" stroke="#64748b" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)" /> <!-- Kidney -->
+                            <line x1="200" y1="240" x2="182" y2="240" stroke="#64748b" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)" /> <!-- Ureter -->
+                            <line x1="100" y1="340" x2="120" y2="330" stroke="#64748b" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)" /> <!-- Bladder -->
+                            <line x1="200" y1="400" x2="150" y2="390" stroke="#64748b" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow)" /> <!-- Urethra -->
+
+                            <!-- Organs -->
+                            <path d="M 135 20 L 135 150 M 135 100 L 100 100 M 135 130 L 200 130" stroke="#3b82f6" stroke-width="12" fill="none" class="organ pointer-events-auto" stroke-linecap="round"/>
+                            <path d="M 165 20 L 165 150 M 165 80 L 100 80 M 165 110 L 200 110" stroke="#ef4444" stroke-width="10" fill="none" class="organ pointer-events-auto" stroke-linecap="round"/>
+                            <path d="M 60 70 C 80 50, 110 60, 110 100 C 110 140, 80 150, 60 130 C 40 110, 40 90, 60 70 Z" fill="#b91c1c" class="organ pointer-events-auto"/>
+                            <path d="M 240 100 C 220 80, 190 90, 190 130 C 190 170, 220 180, 240 160 C 260 140, 260 120, 240 100 Z" fill="#b91c1c" class="organ pointer-events-auto"/>
+                            <path d="M 105 115 C 105 180, 130 250, 140 320" stroke="#fde047" stroke-width="6" fill="none" class="organ pointer-events-auto"/>
+                            <path d="M 195 145 C 195 210, 170 250, 160 320" stroke="#fde047" stroke-width="6" fill="none" class="organ pointer-events-auto"/>
+                            <circle cx="150" cy="330" r="35" fill="#fbcfe8" stroke="#f472b6" stroke-width="3" class="organ pointer-events-auto"/>
+                            <path d="M 150 365 L 150 410" stroke="#fde047" stroke-width="8" fill="none" class="organ pointer-events-auto"/>
+                        </svg>
+
+                        <!-- Dropzones using standard pixel positioning to align with SVG -->
+                        <div class="absolute top-[20px] left-[10px] w-[100px]">
+                            <div class="dropzone anat-dropzone border-2 border-dashed border-slate-400 rounded-md bg-white/90 p-2 text-sm text-center flex items-center justify-center font-medium cursor-pointer" data-target="Renal Vein">?</div>
+                        </div>
+                        <div class="absolute top-[20px] right-[10px] w-[100px]">
+                            <div class="dropzone anat-dropzone border-2 border-dashed border-slate-400 rounded-md bg-white/90 p-2 text-sm text-center flex items-center justify-center font-medium cursor-pointer" data-target="Renal Artery">?</div>
+                        </div>
+                        <div class="absolute top-[110px] left-[10px] w-[90px]">
+                            <div class="dropzone anat-dropzone border-2 border-dashed border-slate-400 rounded-md bg-white/90 p-2 text-sm text-center flex items-center justify-center font-medium cursor-pointer" data-target="Kidney">?</div>
+                        </div>
+                        <div class="absolute top-[220px] right-[10px] w-[90px]">
+                            <div class="dropzone anat-dropzone border-2 border-dashed border-slate-400 rounded-md bg-white/90 p-2 text-sm text-center flex items-center justify-center font-medium cursor-pointer" data-target="Ureter">?</div>
+                        </div>
+                        <div class="absolute top-[320px] left-[10px] w-[90px]">
+                            <div class="dropzone anat-dropzone border-2 border-dashed border-slate-400 rounded-md bg-white/90 p-2 text-sm text-center flex items-center justify-center font-medium cursor-pointer" data-target="Bladder">?</div>
+                        </div>
+                        <div class="absolute top-[380px] right-[10px] w-[90px]">
+                            <div class="dropzone anat-dropzone border-2 border-dashed border-slate-400 rounded-md bg-white/90 p-2 text-sm text-center flex items-center justify-center font-medium cursor-pointer" data-target="Urethra">?</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-between items-center">
+                <p id="anat-feedback" class="text-lg font-semibold text-teal-600"></p>
+                <button onclick="resetAnatomy()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300 transition">Reset Diagram</button>
+            </div>
+        </section>
+
+        <section id="tab-functions" class="tab-content bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Kidney Functions</h2>
+                    <p class="text-slate-600"><i class="fa-solid fa-hand-pointer text-teal-500 mr-1"></i> <strong>Tap or Drag</strong> a card below into the correct process category.</p>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 px-4 py-2 rounded-lg text-center">
+                    <span class="block text-xs text-teal-600 font-bold uppercase">Section Score</span>
+                    <span id="score-functions-txt" class="text-xl font-bold text-teal-800">0 / 9</span>
+                </div>
+            </div>
+            
+            <div id="func-wordbank" class="flex flex-wrap gap-3 mb-8 bg-slate-50 p-4 rounded-lg border border-slate-200 min-h-[80px]"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-red-50 rounded-lg p-4 border border-red-200">
+                    <h3 class="font-bold text-red-800 border-b border-red-200 pb-2 mb-3 text-center">Ultrafiltration</h3>
+                    <div class="func-dropzone flex flex-col gap-2 min-h-[200px] rounded-lg transition-colors p-2 -mx-2" data-target="ultra"></div>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <h3 class="font-bold text-blue-800 border-b border-blue-200 pb-2 mb-3 text-center">Selective Reabsorption</h3>
+                    <div class="func-dropzone flex flex-col gap-2 min-h-[200px] rounded-lg transition-colors p-2 -mx-2" data-target="reabsorb"></div>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <h3 class="font-bold text-green-800 border-b border-green-200 pb-2 mb-3 text-center">Osmoregulation</h3>
+                    <div class="func-dropzone flex flex-col gap-2 min-h-[200px] rounded-lg transition-colors p-2 -mx-2" data-target="osmo"></div>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-between items-center">
+                <button onclick="checkFunctions()" class="bg-teal-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-teal-700 transition">Check Answers</button>
+                <p id="func-feedback" class="text-lg font-semibold ml-4 flex-grow"></p>
+                <button onclick="resetFunctions()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300 transition">Reset</button>
+            </div>
+        </section>
+
+        <section id="tab-quiz" class="tab-content bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">Mastery Quiz</h2>
+                    <p class="text-slate-600">Test your knowledge. 20 questions based on the AQA specification.</p>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 px-4 py-2 rounded-lg text-center">
+                    <span class="block text-xs text-teal-600 font-bold uppercase">Section Score</span>
+                    <span id="score-quiz-txt" class="text-xl font-bold text-teal-800">0 / 20</span>
+                </div>
+            </div>
+            
+            <!-- Single Question Container -->
+            <div id="quiz-question-container" class="min-h-[250px]"></div>
+            
+            <div id="quiz-results" class="hidden mt-8 p-6 bg-teal-50 rounded-xl border border-teal-200 text-center">
+                <h3 class="text-3xl font-bold text-teal-800 mb-2">Quiz Complete!</h3>
+                <p class="text-xl text-teal-700 mb-4">You scored <span id="quiz-score-final" class="font-bold text-2xl"></span> out of 20.</p>
+                <div class="flex justify-center gap-4 flex-wrap">
+                    <button onclick="resetQuiz()" class="bg-slate-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-700 transition shadow-md">Retake Whole Quiz</button>
+                    <button id="retake-wrong-btn" onclick="retakeIncorrect()" class="hidden bg-orange-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-600 transition shadow-md">Repeat Incorrect Questions</button>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+                <button id="next-mcq-btn" onclick="handleNextMcq()" class="hidden bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md text-lg">Next Question <i class="fa-solid fa-arrow-right ml-2"></i></button>
+            </div>
+        </section>
+
+        <section id="tab-adh" class="tab-content bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">The ADH Negative Feedback Loop</h2>
+                    <p class="text-slate-600"><strong>Drag and drop</strong> or use the arrows to reorder these 5 steps showing what happens when a person is dehydrated.</p>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 px-4 py-2 rounded-lg text-center">
+                    <span class="block text-xs text-teal-600 font-bold uppercase">Section Score</span>
+                    <span id="score-adh-txt" class="text-xl font-bold text-teal-800">0 / 5</span>
+                </div>
+            </div>
+            
+            <div class="max-w-2xl mx-auto">
+                <ul id="adh-list" class="space-y-3"></ul>
+                
+                <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <button onclick="checkAdhOrder()" class="w-full sm:w-auto bg-teal-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-teal-700 transition shadow-md">Check Order</button>
+                    <p id="adh-feedback" class="text-lg font-semibold flex-grow text-center sm:text-left"></p>
+                    <button onclick="resetAdhOrder()" class="w-full sm:w-auto bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300 transition">Reset</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-exam" class="tab-content bg-white rounded-xl shadow-sm p-6 border border-slate-200 relative">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">5-Mark Exam Questions</h2>
+                    <p class="text-slate-600 mb-2">Type your answers in the boxes below for instant keyword marking.</p>
+                </div>
+                <div class="bg-teal-50 border border-teal-200 px-4 py-2 rounded-lg text-center">
+                    <span class="block text-xs text-teal-600 font-bold uppercase">Section Score</span>
+                    <span id="score-exam-txt" class="text-xl font-bold text-teal-800">0 / 15</span>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r">
+                <p class="text-yellow-800 text-sm"><strong>Disclaimer:</strong> This automated system marks based on key AQA specification terms and correct spellings. In a real exam, you may be awarded a higher (or lower) mark depending on the clarity and exact phrasing of your prose.</p>
+            </div>
+            
+            <div class="space-y-8">
+                <div class="exam-q bg-slate-50 p-5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-lg mb-2">Q1. Explain how the hormone ADH controls blood water levels. (5 marks)</h3>
+                    <textarea id="q1-answer" rows="4" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 mb-3" placeholder="Type your answer here..."></textarea>
+                    <div id="q1-feedback" class="hidden mt-3 space-y-3"></div>
+                </div>
+
+                <div class="exam-q bg-slate-50 p-5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-lg mb-2">Q2. Describe the processes of ultrafiltration and selective reabsorption in the kidney. (5 marks)</h3>
+                    <textarea id="q2-answer" rows="4" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 mb-3" placeholder="Type your answer here..."></textarea>
+                    <div id="q2-feedback" class="hidden mt-3 space-y-3"></div>
+                </div>
+
+                <div class="exam-q bg-slate-50 p-5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-lg mb-2">Q3. Evaluate the use of kidney transplants compared to dialysis treatment. (5 marks)</h3>
+                    <textarea id="q3-answer" rows="4" class="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 mb-3" placeholder="Type your answer here..."></textarea>
+                    <div id="q3-feedback" class="hidden mt-3 space-y-3"></div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4 pt-4 border-t border-slate-200">
+                    <button onclick="markExamQs()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg text-lg">Mark My Answers</button>
+                    <button onclick="generateReport()" class="bg-slate-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-900 transition shadow-lg text-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-camera"></i> Screenshot Marks
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="report-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+            <div class="bg-teal-600 p-6 text-white text-center">
+                <i class="fa-solid fa-graduation-cap text-4xl mb-2"></i>
+                <h2 class="text-2xl font-bold">AQA Kidney Report</h2>
+            </div>
+            <div class="p-6">
+                <div id="report-content" class="space-y-4 mb-6"></div>
+                <div id="report-timestamp" class="text-sm text-slate-500 text-center mb-6 font-mono bg-slate-100 p-2 rounded"></div>
+                <div class="text-center mb-4 text-sm text-slate-500 italic">Screenshot this box to send to your teacher.</div>
+                <button onclick="document.getElementById('report-modal').classList.add('hidden')" class="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-bold hover:bg-slate-300 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Scores
+        const globalScores = { anatomy: 0, functions: 0, quiz: 0, adh: 0, exam: 0 };
+        function updateScoreDisplay(section, max) {
+            document.getElementById(`score-${section}-txt`).innerText = `${globalScores[section]} / ${max}`;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-white', 'text-white', 'active');
+                btn.classList.add('border-transparent', 'text-teal-100');
+            });
+            event.currentTarget.classList.remove('border-transparent', 'text-teal-100');
+            event.currentTarget.classList.add('border-white', 'text-white', 'active');
+            window.scrollTo(0,0);
+        }
+
+        /* --- ANATOMY --- */
+        const anatomyData = ["Kidney", "Ureter", "Bladder", "Urethra", "Renal Artery", "Renal Vein"];
+        let anatSelectedLabel = null;
+        let anatDraggedLabel = null;
+        let anatPlacedCount = 0;
+
+        function initAnatomy() {
+            const container = document.getElementById('anatomy-labels');
+            container.innerHTML = '';
+            anatomyData.forEach(lbl => {
+                const btn = document.createElement('button');
+                btn.className = 'selectable bg-white border border-slate-300 px-3 py-2 rounded shadow-sm text-sm font-medium hover:bg-slate-50 transition cursor-grab';
+                btn.innerText = lbl;
+                btn.draggable = true;
+                
+                // Tap events
+                btn.onclick = () => selectAnatLabel(btn, lbl);
+                
+                // Drag events
+                btn.ondragstart = (e) => { 
+                    anatDraggedLabel = { btn, label: lbl }; 
+                    e.dataTransfer.setData('text/plain', lbl);
+                    setTimeout(() => btn.classList.add('opacity-50'), 0);
+                };
+                btn.ondragend = () => btn.classList.remove('opacity-50');
+                
+                container.appendChild(btn);
+            });
+
+            document.querySelectorAll('.anat-dropzone').forEach(zone => {
+                zone.innerText = '?';
+                zone.classList.remove('bg-green-100', 'border-green-500', 'text-green-800', 'correct-anim');
+                zone.classList.add('bg-white/90', 'border-slate-400');
+                
+                // Tap drop
+                zone.onclick = () => attemptPlaceAnatomy(zone, anatSelectedLabel);
+                
+                // Drag drop
+                zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('drag-over'); };
+                zone.ondragleave = () => zone.classList.remove('drag-over');
+                zone.ondrop = (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    attemptPlaceAnatomy(zone, anatDraggedLabel);
+                };
+            });
+            
+            anatPlacedCount = 0;
+            globalScores.anatomy = 0;
+            updateScoreDisplay('anatomy', 6);
+            document.getElementById('anat-feedback').innerText = '';
+        }
+
+        function selectAnatLabel(btn, label) {
+            document.querySelectorAll('#anatomy-labels .selectable').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            anatSelectedLabel = { btn, label };
+            document.querySelectorAll('.anat-dropzone').forEach(z => {
+                if(z.innerText === '?') z.classList.add('highlight');
+            });
+        }
+
+        function attemptPlaceAnatomy(zone, labelObj) {
+            if (!labelObj || zone.innerText !== '?') return;
+            const target = zone.getAttribute('data-target');
+            
+            if (labelObj.label === target) {
+                zone.innerText = target;
+                zone.classList.remove('highlight', 'border-slate-400', 'border-dashed', 'bg-white/90');
+                zone.classList.add('bg-green-100', 'border-green-500', 'border-solid', 'text-green-800', 'correct-anim');
+                labelObj.btn.remove();
+                if(labelObj === anatSelectedLabel) anatSelectedLabel = null;
+                
+                anatPlacedCount++;
+                globalScores.anatomy++;
+                updateScoreDisplay('anatomy', 6);
+                document.querySelectorAll('.anat-dropzone').forEach(z => z.classList.remove('highlight'));
+
+                if (anatPlacedCount === anatomyData.length) {
+                    document.getElementById('anat-feedback').innerHTML = '<i class="fa-solid fa-circle-check text-green-500"></i> Excellent! Diagram complete.';
+                }
+            } else {
+                zone.classList.add('wrong-anim');
+                setTimeout(() => zone.classList.remove('wrong-anim'), 500);
+            }
+        }
+        function resetAnatomy() { initAnatomy(); }
+
+        /* --- FUNCTIONS --- */
+        const functionsData = [
+            { text: "High pressure filtration of blood", target: "ultra" },
+            { text: "Glucose, water, urea & ions filtered out", target: "ultra" },
+            { text: "Large proteins stay in blood", target: "ultra" },
+            { text: "All glucose taken back into blood", target: "reabsorb" },
+            { text: "Requires active transport", target: "reabsorb" },
+            { text: "Some water & useful ions absorbed", target: "reabsorb" },
+            { text: "Controlling blood water levels", target: "osmo" },
+            { text: "Varying amounts of water reabsorbed", target: "osmo" },
+            { text: "Controlled by ADH", target: "osmo" }
+        ];
+        
+        let funcSelectedCard = null;
+        let funcDraggedCard = null;
+
+        function initFunctions() {
+            const container = document.getElementById('func-wordbank');
+            container.innerHTML = '';
+            globalScores.functions = 0;
+            updateScoreDisplay('functions', 9);
+            
+            [...functionsData].sort(() => Math.random() - 0.5).forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'selectable func-card bg-white border border-slate-300 p-2 rounded shadow-sm text-sm cursor-grab hover:bg-slate-50 transition';
+                div.innerText = item.text;
+                div.dataset.target = item.target;
+                
+                // Tap
+                div.onclick = (e) => { e.stopPropagation(); selectFuncCard(div); };
+                
+                // Drag
+                div.draggable = true;
+                div.ondragstart = (e) => { 
+                    funcDraggedCard = div; 
+                    setTimeout(() => div.classList.add('opacity-50'), 0);
+                };
+                div.ondragend = () => div.classList.remove('opacity-50');
+                
+                container.appendChild(div);
+            });
+
+            document.querySelectorAll('.func-dropzone').forEach(zone => {
+                zone.innerHTML = '';
+                zone.classList.remove('highlight');
+                
+                // Tap
+                zone.onclick = () => { if(funcSelectedCard) placeFuncCard(zone, funcSelectedCard); };
+                
+                // Drag
+                zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('drag-over'); };
+                zone.ondragleave = () => zone.classList.remove('drag-over');
+                zone.ondrop = (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    if(funcDraggedCard) placeFuncCard(zone, funcDraggedCard);
+                };
+            });
+            document.getElementById('func-feedback').innerText = '';
+        }
+
+        function selectFuncCard(card) {
+            document.querySelectorAll('.func-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            funcSelectedCard = card;
+            document.querySelectorAll('.func-dropzone').forEach(z => z.classList.add('highlight'));
+        }
+
+        function placeFuncCard(zone, card) {
+            card.classList.remove('selected');
+            zone.appendChild(card);
+            if(card === funcSelectedCard) funcSelectedCard = null;
+            document.querySelectorAll('.func-dropzone').forEach(z => z.classList.remove('highlight'));
+            
+            // Allow moving back
+            card.onclick = (e) => {
+                e.stopPropagation();
+                document.getElementById('func-wordbank').appendChild(card);
+                card.onclick = (ev) => { ev.stopPropagation(); selectFuncCard(card); };
+            };
+        }
+
+        function checkFunctions() {
+            let correctCount = 0;
+            document.querySelectorAll('.func-dropzone').forEach(zone => {
+                const zoneTarget = zone.dataset.target;
+                zone.querySelectorAll('.func-card').forEach(card => {
+                    if (card.dataset.target === zoneTarget) {
+                        card.classList.add('bg-green-100', 'border-green-500');
+                        card.classList.remove('bg-red-100', 'border-red-500', 'bg-white', 'border-slate-300');
+                        correctCount++;
+                    } else {
+                        card.classList.add('bg-red-100', 'border-red-500', 'wrong-anim');
+                        card.classList.remove('bg-green-100', 'border-green-500', 'bg-white', 'border-slate-300');
+                        setTimeout(() => card.classList.remove('wrong-anim'), 500);
+                    }
+                });
+            });
+
+            globalScores.functions = correctCount;
+            updateScoreDisplay('functions', 9);
+            
+            const fb = document.getElementById('func-feedback');
+            if(document.getElementById('func-wordbank').children.length > 0) {
+                fb.innerHTML = "Place all cards first!";
+                fb.className = "text-lg font-semibold ml-4 flex-grow text-orange-600";
+            } else if (correctCount === 9) {
+                fb.innerHTML = '<i class="fa-solid fa-star text-yellow-500"></i> Perfect!';
+                fb.className = "text-lg font-semibold ml-4 flex-grow text-green-600";
+            } else {
+                fb.innerHTML = "Some are incorrect (red). Try moving them.";
+                fb.className = "text-lg font-semibold ml-4 flex-grow text-red-600";
+            }
+        }
+        function resetFunctions() { initFunctions(); }
+
+        /* --- MCQ --- */
+        const quizData = [
+            { q: "Which organ is primarily responsible for producing urine?", opts: ["Liver", "Kidney", "Bladder", "Pancreas"], ans: 1 },
+            { q: "What is the name of the tube that carries urine from the kidney to the bladder?", opts: ["Urethra", "Renal vein", "Ureter", "Aorta"], ans: 2 },
+            { q: "What is the name of the tube that carries urine out of the body?", opts: ["Urethra", "Ureter", "Renal artery", "Capillary"], ans: 0 },
+            { q: "Which blood vessel brings oxygenated, unfiltered blood TO the kidney?", opts: ["Renal vein", "Hepatic portal vein", "Pulmonary artery", "Renal artery"], ans: 3 },
+            { q: "Where in the body are excess amino acids broken down?", opts: ["Kidneys", "Stomach", "Liver", "Small intestine"], ans: 2 },
+            { q: "What is the biological term for the breakdown of excess amino acids?", opts: ["Denaturation", "Deamination", "Digestion", "Detoxification"], ans: 1 },
+            { q: "Deamination produces a highly toxic substance. What is it?", opts: ["Urea", "Carbon dioxide", "Ammonia", "Lactic acid"], ans: 2 },
+            { q: "Because ammonia is toxic, the liver converts it into a safer substance. What is it?", opts: ["Urea", "Glucose", "Glycogen", "Uric acid"], ans: 0 },
+            { q: "What is the first process that occurs in the kidney tubules?", opts: ["Osmoregulation", "Active transport", "Selective reabsorption", "Ultrafiltration"], ans: 3 },
+            { q: "Which of the following is NOT filtered out of the blood during ultrafiltration?", opts: ["Water", "Urea", "Glucose", "Proteins"], ans: 3 },
+            { q: "Why are red blood cells and large proteins not filtered out?", opts: ["They are too large", "They are reabsorbed immediately", "They carry oxygen", "Repelled by the kidney"], ans: 0 },
+            { q: "What process ensures useful substances return to the blood?", opts: ["Filtration", "Selective reabsorption", "Excretion", "Deamination"], ans: 1 },
+            { q: "In a healthy person, how much glucose is reabsorbed?", opts: ["None", "50%", "Most", "All of it"], ans: 3 },
+            { q: "By what cellular process is glucose reabsorbed against a concentration gradient?", opts: ["Osmosis", "Diffusion", "Active transport", "Respiration"], ans: 2 },
+            { q: "Which hormone directly controls the concentration of urine?", opts: ["Insulin", "Adrenaline", "ADH", "Thyroxine"], ans: 2 },
+            { q: "Which gland monitors blood water potential and releases ADH?", opts: ["Thyroid", "Pituitary gland", "Adrenal gland", "Pancreas"], ans: 1 },
+            { q: "If the blood becomes too concentrated (dehydrated), what happens?", opts: ["More ADH released", "Less ADH released", "No ADH released", "ADH is destroyed"], ans: 0 },
+            { q: "What physical effect does ADH have on the kidney tubules?", opts: ["Less permeable to water", "More permeable to water", "Stops filtration", "Increases glucose"], ans: 1 },
+            { q: "What type of urine is produced when ADH levels are HIGH?", opts: ["Large volume, dilute", "Small volume, dilute", "Small volume, concentrated", "Large volume, concentrated"], ans: 2 },
+            { q: "Which is a main disadvantage of a kidney transplant compared to dialysis?", opts: ["Requires restricted diet", "Takes up many hours a week", "Risk of rejection & immunosuppressants", "Temporary fix"], ans: 2 }
+        ];
+
+        let activeQuizIndices = [];
+        let incorrectQuizIndices = [];
+        let currentQueueIdx = 0;
+        let mcqAnswered = false;
+
+        function initQuiz() {
+            activeQuizIndices = Array.from({length: quizData.length}, (_, i) => i);
+            incorrectQuizIndices = [];
+            currentQueueIdx = 0;
+            globalScores.quiz = 0;
+            updateScoreDisplay('quiz', 20);
+            
+            document.getElementById('quiz-results').classList.add('hidden');
+            document.getElementById('next-mcq-btn').classList.remove('hidden');
+            renderMcq();
+        }
+
+        function retakeIncorrect() {
+            activeQuizIndices = [...incorrectQuizIndices];
+            incorrectQuizIndices = [];
+            currentQueueIdx = 0;
+            
+            document.getElementById('quiz-results').classList.add('hidden');
+            document.getElementById('next-mcq-btn').classList.remove('hidden');
+            renderMcq();
+        }
+
+        function renderMcq() {
+            const container = document.getElementById('quiz-question-container');
+            const qIdx = activeQuizIndices[currentQueueIdx];
+            const item = quizData[qIdx];
+            const btn = document.getElementById('next-mcq-btn');
+            
+            mcqAnswered = false;
+            btn.classList.add('hidden'); // Hide until answer is selected
+            
+            btn.innerHTML = currentQueueIdx === activeQuizIndices.length - 1 ? 'Finish Quiz <i class="fa-solid fa-flag-checkered ml-2"></i>' : 'Next Question <i class="fa-solid fa-arrow-right ml-2"></i>';
+            
+            let html = `
+                <div class="mb-4 flex justify-between items-center text-sm font-bold text-slate-500 uppercase">
+                    <span>Question ${currentQueueIdx + 1} of ${activeQuizIndices.length} (Overall Q${qIdx + 1})</span>
+                </div>
+                <div class="quiz-q-block p-6 border border-slate-200 rounded-xl bg-slate-50 shadow-sm animate-[fadeIn_0.3s]">
+                    <p class="font-bold text-xl text-slate-800 mb-6">${qIdx + 1}. ${item.q}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            `;
+            
+            item.opts.forEach((opt, optIdx) => {
+                html += `
+                    <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-slate-100 transition quiz-opt-label bg-white border-slate-300" data-opt="${optIdx}">
+                        <input type="radio" name="mcq" value="${optIdx}" class="mr-3 w-5 h-5 text-teal-600 focus:ring-teal-500">
+                        <span class="text-lg">${opt}</span>
+                    </label>
+                `;
+            });
+            html += `</div></div>`;
+            container.innerHTML = html;
+            
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (mcqAnswered) return; // Prevent changing answer once selected
+                    mcqAnswered = true;
+                    
+                    const selectedVal = parseInt(this.value);
+                    const correctVal = item.ans;
+                    const labels = document.querySelectorAll('.quiz-opt-label');
+                    
+                    // Disable all radios
+                    document.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = true);
+                    
+                    if (selectedVal === correctVal) {
+                        // Correct logic
+                        this.closest('label').className = 'flex items-center p-4 border rounded-lg quiz-opt-label bg-green-100 border-green-600 ring-2 ring-green-300 text-green-900 shadow-md';
+                        globalScores.quiz++;
+                        updateScoreDisplay('quiz', 20);
+                    } else {
+                        // Incorrect logic
+                        incorrectQuizIndices.push(qIdx);
+                        this.closest('label').className = 'flex items-center p-4 border rounded-lg quiz-opt-label bg-red-100 border-red-500 ring-2 ring-red-300 text-red-900 shadow-md';
+                        
+                        // Highlight the correct one
+                        labels.forEach(l => {
+                            if (parseInt(l.dataset.opt) === correctVal) {
+                                l.className = 'flex items-center p-4 border rounded-lg quiz-opt-label bg-green-100 border-green-600 ring-2 ring-green-300 text-green-900 shadow-md';
+                            }
+                        });
+                    }
+                    
+                    // Reveal the next button
+                    btn.classList.remove('hidden');
+                });
+            });
+        }
+
+        function handleNextMcq() {
+            if (currentQueueIdx < activeQuizIndices.length - 1) {
+                currentQueueIdx++;
+                renderMcq();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            document.getElementById('quiz-question-container').innerHTML = '';
+            document.getElementById('quiz-score-final').innerText = globalScores.quiz;
+            document.getElementById('quiz-results').classList.remove('hidden');
+            document.getElementById('next-mcq-btn').classList.add('hidden');
+            
+            const retakeWrongBtn = document.getElementById('retake-wrong-btn');
+            if (incorrectQuizIndices.length > 0) {
+                retakeWrongBtn.classList.remove('hidden');
+            } else {
+                retakeWrongBtn.classList.add('hidden');
+            }
+        }
+        function resetQuiz() { initQuiz(); }
+
+        /* --- ADH --- */
+        const adhStepsCorrect = [
+            "1. Blood water concentration drops (e.g., from heavy sweating).",
+            "2. The hypothalamus detects this and signals the pituitary gland to release ADH.",
+            "3. ADH travels in the blood to the kidney tubules.",
+            "4. Kidney tubules become MORE permeable to water.",
+            "5. More water is reabsorbed into the blood, producing concentrated urine."
+        ];
+        
+        let adhDragSrc = null;
+
+        function initAdhOrder() {
+            const list = document.getElementById('adh-list');
+            list.innerHTML = '';
+            globalScores.adh = 0;
+            updateScoreDisplay('adh', 5);
+            
+            let scrambled = [...adhStepsCorrect];
+            // Fisher-Yates shuffle for true, consistent randomization
+            for (let i = scrambled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [scrambled[i], scrambled[j]] = [scrambled[j], scrambled[i]];
+            }
+            
+            // Guarantee the shuffled list is not accidentally perfect on load
+            if (scrambled.every((val, index) => val === adhStepsCorrect[index])) {
+                [scrambled[0], scrambled[1]] = [scrambled[1], scrambled[0]];
+            }
+            
+            scrambled.forEach((text) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-4 bg-white p-4 border border-slate-300 rounded-lg shadow-sm cursor-grab hover:bg-slate-50 transition';
+                li.draggable = true;
+                li.innerHTML = `
+                    <div class="text-slate-400 cursor-move text-xl"><i class="fa-solid fa-grip-lines"></i></div>
+                    <span class="flex-grow font-medium text-slate-700 text-lg">${text.substring(3)}</span>
+                    <div class="flex flex-col gap-1 ml-auto">
+                        <button onclick="moveUpAdh(this)" class="text-slate-400 hover:text-teal-600 transition p-1"><i class="fa-solid fa-chevron-up"></i></button>
+                        <button onclick="moveDownAdh(this)" class="text-slate-400 hover:text-teal-600 transition p-1"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                `;
+                
+                // HTML5 Drag and Drop
+                li.addEventListener('dragstart', function(e) { 
+                    adhDragSrc = this; 
+                    setTimeout(() => this.classList.add('opacity-50'), 0); 
+                });
+                li.addEventListener('dragend', function() { this.classList.remove('opacity-50'); });
+                li.addEventListener('dragover', function(e) { e.preventDefault(); });
+                li.addEventListener('dragenter', function(e) { e.preventDefault(); this.classList.add('border-teal-500', 'bg-teal-50'); });
+                li.addEventListener('dragleave', function() { this.classList.remove('border-teal-500', 'bg-teal-50'); });
+                li.addEventListener('drop', function(e) {
+                    this.classList.remove('border-teal-500', 'bg-teal-50');
+                    if(adhDragSrc !== this) {
+                        let all = [...list.querySelectorAll('li')];
+                        if(all.indexOf(adhDragSrc) < all.indexOf(this)) this.after(adhDragSrc);
+                        else this.before(adhDragSrc);
+                    }
+                });
+                
+                list.appendChild(li);
+            });
+            document.getElementById('adh-feedback').innerText = '';
+        }
+
+        function moveUpAdh(btn) {
+            const li = btn.closest('li');
+            if (li.previousElementSibling) li.parentNode.insertBefore(li, li.previousElementSibling);
+        }
+        function moveDownAdh(btn) {
+            const li = btn.closest('li');
+            if (li.nextElementSibling) li.parentNode.insertBefore(li.nextElementSibling, li);
+        }
+
+        function checkAdhOrder() {
+            const currentItems = Array.from(document.querySelectorAll('#adh-list li span')).map(span => span.innerText);
+            let correctCount = 0;
+            
+            document.querySelectorAll('#adh-list li').forEach((li, index) => {
+                li.classList.remove('bg-green-50', 'border-green-500', 'bg-red-50', 'border-red-400');
+                if (currentItems[index] === adhStepsCorrect[index].substring(3)) {
+                    correctCount++;
+                    li.classList.add('bg-green-50', 'border-green-500');
+                } else {
+                    li.classList.add('bg-red-50', 'border-red-400');
+                }
+            });
+
+            globalScores.adh = correctCount;
+            updateScoreDisplay('adh', 5);
+
+            const fb = document.getElementById('adh-feedback');
+            if (correctCount === 5) {
+                fb.innerHTML = '<i class="fa-solid fa-check-double text-green-500"></i> Perfect sequence!';
+                fb.className = "text-lg font-semibold flex-grow text-center sm:text-left text-green-600";
+            } else {
+                fb.innerText = `You have ${correctCount} / 5 in the correct absolute position.`;
+                fb.className = "text-lg font-semibold flex-grow text-center sm:text-left text-orange-600";
+            }
+        }
+        function resetAdhOrder() { initAdhOrder(); }
+
+        /* --- EXAM QS --- */
+        const examKeys = {
+            q1: {
+                keywords: ["pituitary", "adh", "permeable", "water", "reabsorb", "concentrated", "urine", "blood", "tubule"],
+                low: "Mentioned ADH is released to save water.",
+                med: "States the pituitary gland releases ADH which travels to kidneys, causing water to be reabsorbed.",
+                high: "If blood is concentrated, the pituitary gland releases more ADH. ADH makes the kidney tubules more permeable, so more water is selectively reabsorbed into the blood, producing a small volume of concentrated urine."
+            },
+            q2: {
+                keywords: ["ultrafiltration", "pressure", "filter", "protein", "selective", "reabsorption", "glucose", "active transport", "water", "ion", "urea"],
+                low: "Mentions filtering the blood and taking back glucose.",
+                med: "Describes ultrafiltration under pressure, and selective reabsorption of all glucose and some water.",
+                high: "Blood enters under high pressure causing ultrafiltration. Water, glucose, urea, and ions are filtered out. Large molecules like proteins stay in the blood. Then selective reabsorption occurs: all glucose is reabsorbed via active transport, alongside needed water and ions."
+            },
+            q3: {
+                keywords: ["rejection", "immunosuppressant", "diet", "hospital", "permanent", "surgery", "donor", "time", "cost", "infection", "match"],
+                low: "Transplants mean no more hospital trips but require surgery.",
+                med: "Dialysis requires strict diets and hospital time. Transplants are permanent but have a risk of rejection.",
+                high: "Dialysis requires frequent hospital visits (takes time), strict diet, but no wait for a donor. A transplant is a permanent solution granting a normal life and is cheaper long-term. However, it requires major surgery (infection risk), risks organ rejection, requires lifelong immunosuppressants, and a tissue match is needed."
+            }
+        };
+
+        function calculateMark(text, keywords) {
+            let matches = 0;
+            const lowerText = text.toLowerCase();
+            const foundWords = [];
+            keywords.forEach(word => {
+                if (lowerText.includes(word)) { matches++; foundWords.push(word); }
+            });
+            return { mark: Math.min(matches, 5), found: foundWords };
+        }
+
+        function markExamQs() {
+            let totalExamScore = 0;
+            
+            ["q1", "q2", "q3"].forEach(q => {
+                const answer = document.getElementById(`${q}-answer`).value;
+                const fbDiv = document.getElementById(`${q}-feedback`);
+                
+                if (answer.trim() === "") {
+                    fbDiv.innerHTML = "<p class='text-red-500 font-bold'>Please attempt the question first.</p>";
+                    fbDiv.classList.remove('hidden');
+                    return;
+                }
+
+                const result = calculateMark(answer, examKeys[q].keywords);
+                totalExamScore += result.mark;
+                
+                let html = `
+                    <div class="flex justify-between items-center bg-teal-50 p-3 rounded-lg border border-teal-200">
+                        <span class="font-bold text-slate-700">Estimated Mark:</span>
+                        <span class="text-2xl font-bold ${result.mark >= 4 ? 'text-green-600' : result.mark >= 2 ? 'text-orange-500' : 'text-red-500'}">${result.mark} / 5</span>
+                    </div>
+                    <p class="text-sm text-slate-600"><strong>Keywords detected:</strong> ${result.found.length > 0 ? result.found.join(', ') : 'None'}</p>
+                    <div class="mt-2 space-y-2 text-sm border-t pt-2">
+                        <p><strong class="text-green-700">High-Level Answer (4-5 marks):</strong> ${examKeys[q].high}</p>
+                        <p><strong class="text-orange-600">Medium-Level Answer (2-3 marks):</strong> ${examKeys[q].med}</p>
+                        <p><strong class="text-red-600">Low-Level Answer (1 mark):</strong> ${examKeys[q].low}</p>
+                    </div>
+                `;
+                
+                fbDiv.innerHTML = html;
+                fbDiv.classList.remove('hidden');
+            });
+            
+            globalScores.exam = totalExamScore;
+            updateScoreDisplay('exam', 15);
+        }
+
+        /* --- FINAL REPORT --- */
+        function generateReport() {
+            const total = globalScores.anatomy + globalScores.functions + globalScores.quiz + globalScores.adh + globalScores.exam;
+            const content = document.getElementById('report-content');
+            
+            content.innerHTML = `
+                <div class="flex justify-between items-center py-2 border-b border-slate-200"><span class="font-semibold text-slate-700">Anatomy:</span> <span class="font-bold">${globalScores.anatomy} / 6</span></div>
+                <div class="flex justify-between items-center py-2 border-b border-slate-200"><span class="font-semibold text-slate-700">Functions:</span> <span class="font-bold">${globalScores.functions} / 9</span></div>
+                <div class="flex justify-between items-center py-2 border-b border-slate-200"><span class="font-semibold text-slate-700">MCQ Quiz:</span> <span class="font-bold">${globalScores.quiz} / 20</span></div>
+                <div class="flex justify-between items-center py-2 border-b border-slate-200"><span class="font-semibold text-slate-700">ADH Loop:</span> <span class="font-bold">${globalScores.adh} / 5</span></div>
+                <div class="flex justify-between items-center py-2 border-b border-slate-200"><span class="font-semibold text-slate-700">Exam Qs:</span> <span class="font-bold">${globalScores.exam} / 15</span></div>
+                <div class="flex justify-between items-center py-3 mt-2 bg-teal-50 px-4 rounded-lg border border-teal-200">
+                    <span class="font-bold text-lg text-teal-800">Total Score:</span> 
+                    <span class="font-black text-2xl text-teal-600">${total} / 55</span>
+                </div>
+            `;
+            
+            document.getElementById('report-timestamp').innerText = new Date().toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' });
+            document.getElementById('report-modal').classList.remove('hidden');
+        }
+
+        window.onload = () => {
+            initAnatomy();
+            initFunctions();
+            initQuiz();
+            initAdhOrder();
+        };
+
+    </script>
+</body>
+</html>
